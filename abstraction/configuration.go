@@ -1,6 +1,7 @@
 package abstraction
 
 import (
+	"confarp/primitives"
 	"container/list"
 	"errors"
 )
@@ -10,7 +11,7 @@ type IConfiguration interface {
 	Set(key, value string)
 	GetSection(key string) IConfigurationSection
 	GetChildren() []IConfigurationSection
-	GetReloadChan() chan int
+	GetReloadChan() *primitives.ChangeToken
 }
 
 type IConfigurationSection interface {
@@ -24,25 +25,25 @@ type IConfigurationSection interface {
 type IConfigurationRoot interface {
 	IConfiguration
 	Reload()
-	GetProviders() []*IConfigurationProvider
+	GetProviders() []IConfigurationProvider
 }
 
 type IConfigurationProvider interface {
 	Get(key string) (string, bool)
 	Set(key, value string)
-	GetReloadChan() chan int
+	GetReloadChan() *primitives.ChangeToken
 	Load()
-	GetChildKeys(earlierKeys []string, parentPath string)
+	GetChildKeys(earlierKeys []string, parentPath string) []string
 }
 
 type IConfigurationBuilder interface {
 	GetProperties() map[string]interface{}
-	GetSources() []*IConfigurationSource
-	Add(source IConfigurationSource) *IConfigurationBuilder
-	Build() *IConfigurationRoot
+	GetSources() []IConfigurationSource
+	Add(source IConfigurationSource) IConfigurationBuilder
+	Build() IConfigurationRoot
 }
 
-func Add[TSource IConfigurationSource](builder IConfigurationBuilder, configureSource func(*TSource)) *IConfigurationBuilder {
+func Add[TSource IConfigurationSource](builder IConfigurationBuilder, configureSource func(*TSource)) IConfigurationBuilder {
 	var source TSource
 	if configureSource != nil {
 		configureSource(&source)
@@ -94,5 +95,5 @@ func GetRequiredSection(configuration IConfiguration, key string) (IConfiguratio
 }
 
 type IConfigurationSource interface {
-	Build(builder *IConfigurationBuilder)
+	Build(builder IConfigurationBuilder) IConfigurationProvider
 }
